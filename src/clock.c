@@ -51,7 +51,7 @@ static void UpdatePerDay(struct Time *localTime)
         UpdateFrontierManiac(daysSince);
         UpdateFrontierGambler(daysSince);
         SetShoalItemFlag(daysSince);
-        SetRandomLotteryNumber(daysSince);
+        //SetRandomLotteryNumber(daysSince);
         *days = localTime->days;
     }
 }

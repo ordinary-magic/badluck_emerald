@@ -395,6 +395,7 @@ Route120_Text_StevenUsedDevonScope:
 
 Route120_Text_StevenGiveDevonScope:
 	.string "STEVEN: I see…\n"
+	.string "You're rather unlucky, aren't you?\p"
 	.string "Your battle style is intriguing.\p"
 	.string "Your POKéMON have obviously grown\n"
 	.string "since I first met you in DEWFORD.\p"

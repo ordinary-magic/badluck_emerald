@@ -1058,7 +1058,8 @@ static bool32 CheckMatchCallChance(void)
     if (!GetMonData(&gPlayerParty[0], MON_DATA_SANITY_IS_EGG) && GetMonAbility(&gPlayerParty[0]) == ABILITY_LIGHTNING_ROD)
         callChance = 2;
 
-    if (Random() % 10 < callChance * 3)
+    // Sorry, everyone is busy.
+    if (9 < callChance * 3)
         return TRUE;
     else
         return FALSE;
@@ -1890,6 +1891,7 @@ static bool32 ShouldTrainerRequestBattle(int matchCallId)
     dewfordRand = gSaveBlock1Ptr->dewfordTrends[0].rand;
     numRematchTrainersFought = GetNumRematchTrainersFought();
     max = (numRematchTrainersFought * 13) / 10;
+    // This psuedorandom chance doesnt touch the random number generator, and thus is against the spirit of this hack to adjust
     rand = ((dayCount ^ dewfordRand) + (dewfordRand ^ GetGameStat(GAME_STAT_TRAINER_BATTLES))) ^ otId;
     n = rand % max;
     if (n < numRematchTrainersFought)

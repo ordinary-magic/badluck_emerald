@@ -25,18 +25,19 @@ void ResetLotteryCorner(void)
 {
     u16 rand = Random();
 
-    SetLotteryNumber((Random() << 16) | rand);
+    SetRandomLotteryNumber(1);
     VarSet(VAR_POKELOT_PRIZE_ITEM, 0);
 }
 
 void SetRandomLotteryNumber(u16 i)
 {
-    u32 var = Random();
+    u32 playerid = (gSaveBlock2Ptr->playerTrainerId[1] << 8) | gSaveBlock2Ptr->playerTrainerId[0];
 
-    while (--i != 0xFFFF)
-        var = ISO_RANDOMIZE2(var);
-
-    SetLotteryNumber(var);
+    // Set the number to be either an exact match or a 0 match
+    if(i)
+        SetLotteryNumber(playerid);
+    else
+        SetLotteryNumber(playerid + 11111);
 }
 
 void RetrieveLotteryNumber(void)
@@ -114,6 +115,10 @@ void PickLotteryCornerTicket(void)
             GetBoxMonData(&gPokemonStoragePtr->boxes[box][slot], MON_DATA_NICKNAME, gStringVar1);
         }
         StringGet_Nickname(gStringVar1);
+
+        // Reset the lottery number here instead of on a per day basis
+        //   It will stay as the same 0 match for the rest of the game
+        SetRandomLotteryNumber(0);
     }
 }
 

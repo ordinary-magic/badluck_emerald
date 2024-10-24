@@ -60,6 +60,7 @@ LilycoveCity_DepartmentStore_1F_Text_AllFiveDigitsMatched:
 	.string "matched!\p"
 	.string "You've won the jackpot prize!\n"
 	.string "You've won the {STR_VAR_1}!$"
+	.string "You must be really lucky!"
 
 LilycoveCity_DepartmentStore_1F_Text_NoRoomForThis:
 	.string "Oh?\n"

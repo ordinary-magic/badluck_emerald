@@ -314,7 +314,6 @@ enum {
     DIG_DISPLAY_BONUS_BIG
 };
 
-
 // How ReelTime works
 // ==================
 // Entering ReelTime:
@@ -1190,7 +1189,7 @@ static void InitSlotMachine(void)
     SlotMachine_InitFromTask();
     sSlotMachine->state = SLOTTASK_UNFADE;
     sSlotMachine->pikaPowerBolts = 0;
-    sSlotMachine->luckyGame = Random() & 1;
+    sSlotMachine->luckyGame = FALSE;
     sSlotMachine->machineBias = 0;
     sSlotMachine->matches = 0;
     sSlotMachine->reelTimeSpinsLeft = 0;
@@ -1847,10 +1846,13 @@ static u8 GetBiasSymbol(u8 machineBias)
 // The odds increase to roughly ~5% if you bet 3 coins.
 static bool8 ShouldTrySpecialBias(void)
 {
+    return FALSE;
+    /*
     u8 rval = Random();
     if (sSpecialDrawOdds[sSlotMachine->machineId][sSlotMachine->bet - 1] > rval)
         return TRUE;
     return FALSE;
+    */
 }
 
 // Draws for a Special bias. Note that even when you're given the opportunity to
@@ -1874,8 +1876,9 @@ static u8 TrySelectBias_Special(void)
 
 static u8 TrySelectBias_Regular(void)
 {
-    s16 whichBias;
+    s16 whichBias = ARRAY_COUNT(sBiasesRegular); // no special bias is ever selected
 
+    /*
     for (whichBias = 0; whichBias < (int)ARRAY_COUNT(sBiasesRegular); whichBias++)
     {
         s16 rval = Random() & 0xff;
@@ -1897,7 +1900,8 @@ static u8 TrySelectBias_Regular(void)
         }
         if (value > rval)
             break;
-    }
+    }*/
+   
     return whichBias;
 }
 
@@ -1929,7 +1933,7 @@ static void GetReelTimeDraw(void)
 
     sSlotMachine->reelTimeDraw = 0;
     rval = Random();
-    if (rval < GetReelTimeSpinProbability(0))
+    if (0 < GetReelTimeSpinProbability(0))
         return;
     for (spins = 5; spins > 0; spins--)
     {
@@ -1944,7 +1948,7 @@ static void GetReelTimeDraw(void)
 // the odds of explosion increase.
 static bool8 ShouldReelTimeMachineExplode(u16 check)
 {
-    u16 rval = Random() & 0xff;
+    u16 rval = 0; // Always explode
     if (rval < sReelTimeExplodeProbability[check])
         return TRUE;
     else

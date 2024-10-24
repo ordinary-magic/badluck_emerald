@@ -1630,16 +1630,18 @@ static u8 GetRandomForBallTravelDistance(u16 ballNum, u16 rand)
 static void Task_InitBallRoll(u8 taskId)
 {
     u8 randTravelMod;
-    s8 randTravelDist;
-    s8 startAngleId;
+    s8 randTravelDist = 0;
+    s8 startAngleId = 0;
     u16 travelDist = 0;
     u16 rand;
     u16 randmod;
     u16 startAngles[4] = {0, 180, 90, 270}; // possible angles to start ball from
+    u32 slotnum = 0;
 
-    rand = Random();
+    rand = 0; // Random();
     randmod = rand % 100;
     sRoulette->curBallSpriteId = gTasks[taskId].tBallNum;
+
     // BALL_STATE_ROLLING set below
     sRoulette->ballState = sRoulette->hitSlot = sRoulette->stuckHitSlot = 0;
     randTravelMod = GetRandomForBallTravelDistance(gTasks[taskId].tTotalBallNum, rand);
@@ -1655,13 +1657,31 @@ static void Task_InitBallRoll(u8 taskId)
     else
         startAngleId = (1 - startAngleId) * 2;
 
+    // Moved from further down in the function
+    //if (Random() & 1)
+    //    startAngleId += 1;
+
+    // TODO: It should be theoretically possible to predict the landing angle and corresponding slot, and
+    //  cheat from there to ensure losses, but i haven't been able to get that to work
+    // For now, roulette is a game of skill.
+    /*
+    // Select a "random" travel distance such that it results in an empty space that's a losing roll
+    travelDist = sRouletteTables[sRoulette->tableId].baseTravelDist;
+    do {
+        randTravelDist += DEGREES_PER_SLOT;
+        slotnum = ((startAngles[startAngleId] + sRoulette->wheelAngle + travelDist + randTravelDist) / DEGREES_PER_SLOT) % NUM_ROULETTE_SLOTS;
+    //} while ((sRouletteSlots[slotnum].flag & sRoulette->hitFlags) ||
+    //    (sRouletteSlots[slotnum].flag & sGridSelections[sRoulette->betSelection[sRoulette->curBallNum]].inSelectionFlags));
+    } while (slotnum != 0);
+    */
+
     sRoulette->ballTravelDist = travelDist = sRouletteTables[sRoulette->tableId].baseTravelDist + randTravelDist;
 
     travelDist = S16TOPOSFLOAT(travelDist) / 5.0f;
     sRoulette->ballTravelDistFast = travelDist * 3;
     sRoulette->ballTravelDistSlow = sRoulette->ballTravelDistMed = travelDist;
 
-    sRoulette->ballAngle = S16TOPOSFLOAT(startAngles[(rand & 1) + startAngleId]);
+    sRoulette->ballAngle = S16TOPOSFLOAT(startAngles[startAngleId]);
     sRoulette->ballAngleSpeed = S16TOPOSFLOAT(sRouletteTables[sRoulette->tableId].ballSpeed);
     sRoulette->ballAngleAccel = ((sRoulette->ballAngleSpeed * 0.5f) - sRoulette->ballAngleSpeed) / S16TOPOSFLOAT(sRoulette->ballTravelDistFast);
     sRoulette->ballDistToCenter = 68.0f;
@@ -4471,20 +4491,21 @@ static void SetBallStuck(struct Sprite *sprite)
         if (!(sRoulette->hitFlags & sRouletteSlots[slotId].flag))
         {
             slotCandidates[numCandidates++] = i;
-            if (betSlotId == 0 && (sRouletteSlots[slotId].flag & sGridSelections[sRoulette->betSelection[sRoulette->curBallNum]].inSelectionFlags))
-                betSlotId = i;
+            if (betSlotId == 0 && !(sRouletteSlots[slotId].flag & sGridSelections[sRoulette->betSelection[sRoulette->curBallNum]].inSelectionFlags))
+                betSlotId = i; // Invert bet slot id to track slots not bet on instead
         }
         slotId = (slotId + 1) % NUM_ROULETTE_SLOTS;
     }
 
     // Determine which identified slot the ball should be moved to
     // The below slot ids are relative to the slot the ball got stuck on
-    if ((sRoulette->useTaillow + 1) & sRoulette->partySpeciesFlags)
+    if (TRUE || ((sRoulette->useTaillow + 1) & sRoulette->partySpeciesFlags))
     {
         // If the player has the corresponding Pokémon in their party (HAS_SHROOMISH or HAS_TAILLOW),
         // there's a 75% chance that the ball will be moved to a spot they bet on
         // assuming it was one of the slots identified as a candidate
-        if (betSlotId && (rand % 256) < 192)
+        if (betSlotId && 0 < 192)
+            // Note that betSlotId is inverted, thus this will always try to put it in a losing slot if it can
             sprite->data[7] = betSlotId;
         else
             sprite->data[7] = slotCandidates[rand % numCandidates];

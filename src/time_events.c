@@ -16,6 +16,7 @@ static u32 GetMirageRnd(void)
     return (hi << 16) | lo;
 }
 
+// TODO: Is this also mirage tower? How does it interact with the other setter?
 static void SetMirageRnd(u32 rnd)
 {
     VarSet(VAR_MIRAGE_RND_H, rnd >> 16);
@@ -41,6 +42,13 @@ void UpdateMirageRnd(u16 days)
 
 bool8 IsMirageIslandPresent(void)
 {
+    // This is psuedorandom, not random, but it's based off of randomly generated personality values and
+    //   a special randomly generated hidden value. Rather than changing both of those, this method will
+    //   just always return true instead, since rng could theoretically enable that as long as the
+    //   player has enough pokemon. (False would fix the pokemon requirement, but is less interesting)
+    return TRUE;
+
+    /*
     u16 rnd = GetMirageRnd() >> 16;
     int i;
 
@@ -49,6 +57,7 @@ bool8 IsMirageIslandPresent(void)
             return TRUE;
 
     return FALSE;
+    */
 }
 
 void UpdateShoalTideFlag(void)

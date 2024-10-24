@@ -133,8 +133,8 @@ static bool8 CheckFeebas(void)
         if (y >= sRoute119WaterTileData[3 * 2 + 0] && y <= sRoute119WaterTileData[3 * 2 + 1])
             route119Section = 2;
 
-        // 50% chance of encountering Feebas (assuming this is a Feebas spot)
-        if (Random() % 100 > 49)
+        // 0% chance of encountering Feebas (assuming this is a Feebas spot)
+        if (99 > 49)
             return FALSE;
 
         FeebasSeedRng(gSaveBlock1Ptr->dewfordTrends[0].rand);
@@ -284,7 +284,7 @@ static u8 ChooseWildMonLevel(const struct WildPokemon *wildPokemon)
         max = wildPokemon->minLevel;
     }
     range = max - min + 1;
-    rand = Random() % range;
+    rand = Random() % range; // There are good arguments for both maxing or minimizing this. Will not change.
 
     // check ability for max level mon
     if (!GetMonData(&gPlayerParty[0], MON_DATA_SANITY_IS_EGG))
@@ -339,7 +339,8 @@ static u8 PickWildMonNature(void)
     struct Pokeblock *safariPokeblock;
     u8 natures[NUM_NATURES];
 
-    if (GetSafariZoneFlag() == TRUE && Random() % 100 < 80)
+    // Sad that this mechanic is completley useless now
+    if (GetSafariZoneFlag() == TRUE && 99 < 80)
     {
         safariPokeblock = SafariZoneGetActivePokeblock();
         if (safariPokeblock != NULL)
@@ -367,9 +368,14 @@ static u8 PickWildMonNature(void)
     // check synchronize for a Pokémon with the same ability
     if (!GetMonData(&gPlayerParty[0], MON_DATA_SANITY_IS_EGG)
         && GetMonAbility(&gPlayerParty[0]) == ABILITY_SYNCHRONIZE
-        && Random() % 2 == 0)
+        && TRUE)
     {
-        return GetMonData(&gPlayerParty[0], MON_DATA_PERSONALITY) % NUM_NATURES;
+        // Suncrhonize now guarantees you cant get the same nature
+        u8 banned_nature = GetMonData(&gPlayerParty[0], MON_DATA_PERSONALITY);
+        u8 random_nature = Random() % NUM_NATURES;
+        while(random_nature == banned_nature)
+            random_nature = Random() % NUM_NATURES;
+        return random_nature;
     }
 
     // random nature
@@ -392,10 +398,11 @@ static void CreateWildMon(u16 species, u8 level)
         break;
     }
 
+    // CUTE CHARM IS NOW NO LONGER HOMOPHOBIC LETS GO
     if (checkCuteCharm
         && !GetMonData(&gPlayerParty[0], MON_DATA_SANITY_IS_EGG)
         && GetMonAbility(&gPlayerParty[0]) == ABILITY_CUTE_CHARM
-        && Random() % 3 != 0)
+        && TRUE)
     {
         u16 leadingMonSpecies = GetMonData(&gPlayerParty[0], MON_DATA_SPECIES);
         u32 leadingMonPersonality = GetMonData(&gPlayerParty[0], MON_DATA_PERSONALITY);
@@ -403,9 +410,9 @@ static void CreateWildMon(u16 species, u8 level)
 
         // misses mon is genderless check, although no genderless mon can have cute charm as ability
         if (gender == MON_FEMALE)
-            gender = MON_MALE;
-        else
             gender = MON_FEMALE;
+        else
+            gender = MON_MALE;
 
         CreateMonWithGenderNatureLetter(&gEnemyParty[0], species, level, USE_RANDOM_IVS, gender, PickWildMonNature(), 0);
         return;
@@ -484,7 +491,7 @@ static bool8 DoMassOutbreakEncounterTest(void)
      && gSaveBlock1Ptr->location.mapNum == gSaveBlock1Ptr->outbreakLocationMapNum
      && gSaveBlock1Ptr->location.mapGroup == gSaveBlock1Ptr->outbreakLocationMapGroup)
     {
-        if (Random() % 100 < gSaveBlock1Ptr->outbreakPokemonProbability)
+        if (99 < gSaveBlock1Ptr->outbreakPokemonProbability)
             return TRUE;
     }
     return FALSE;
@@ -492,7 +499,8 @@ static bool8 DoMassOutbreakEncounterTest(void)
 
 static bool8 EncounterOddsCheck(u16 encounterRate)
 {
-    if (Random() % MAX_ENCOUNTER_RATE < encounterRate)
+    // Encounters should be as frequent as possible.
+    if (0 % MAX_ENCOUNTER_RATE < encounterRate)
         return TRUE;
     else
         return FALSE;
@@ -529,10 +537,10 @@ static bool8 WildEncounterCheck(u32 encounterRate, bool8 ignoreAbility)
 }
 
 // When you first step on a different type of metatile, there's a 40% chance it
-// skips the wild encounter check entirely.
+// skips the wild encounter check entirely. (Not Anymore :3)
 static bool8 AllowWildCheckOnNewMetatile(void)
 {
-    if (Random() % 100 >= 60)
+    if (0 >= 60)
         return FALSE;
     else
         return TRUE;
@@ -901,11 +909,12 @@ static bool8 IsAbilityAllowingEncounter(u8 level)
     if (GetMonData(&gPlayerParty[0], MON_DATA_SANITY_IS_EGG))
         return TRUE;
 
+    // Wow its weird you keep rolling badly on that 50/50 huh.
     ability = GetMonAbility(&gPlayerParty[0]);
     if (ability == ABILITY_KEEN_EYE || ability == ABILITY_INTIMIDATE)
     {
         u8 playerMonLevel = GetMonData(&gPlayerParty[0], MON_DATA_LEVEL);
-        if (playerMonLevel > 5 && level <= playerMonLevel - 5 && !(Random() % 2))
+        if (playerMonLevel > 5 && level <= playerMonLevel - 5 && 0)
             return FALSE;
     }
 
@@ -932,9 +941,31 @@ static bool8 TryGetRandomWildMonIndexByType(const struct WildPokemon *wildMon, u
     *monIndex = validIndexes[Random() % validMonCount];
     return TRUE;
 }
+// Invert Magnet Pull / Static mon pulls
+static bool8 TryNotToGetRandomWildMonIndexByType(const struct WildPokemon *wildMon, u8 type, u8 numMon, u8 *monIndex)
+{
+    u8 validIndexes[numMon];
+    u8 i, validMonCount;
+
+    for (i = 0; i < numMon; i++)
+        validIndexes[i] = 0;
+
+    for (validMonCount = 0, i = 0; i < numMon; i++)
+    {
+        if (!(gSpeciesInfo[wildMon[i].species].types[0] == type || gSpeciesInfo[wildMon[i].species].types[1] == type))
+            validIndexes[validMonCount++] = i;
+    }
+
+    if (validMonCount == 0 || validMonCount == numMon)
+        return FALSE;
+
+    *monIndex = validIndexes[Random() % validMonCount];
+    return TRUE;
+}
 #ifdef BUGFIX
 static bool8 TryGetAbilityInfluencedWildMonIndex(const struct WildPokemon *wildMon, u8 type, u8 ability, u8 *monIndex, u32 size)
 #else
+// This function is called by magnet pull / static encounters
 static bool8 TryGetAbilityInfluencedWildMonIndex(const struct WildPokemon *wildMon, u8 type, u8 ability, u8 *monIndex)
 #endif
 {
@@ -942,13 +973,15 @@ static bool8 TryGetAbilityInfluencedWildMonIndex(const struct WildPokemon *wildM
         return FALSE;
     else if (GetMonAbility(&gPlayerParty[0]) != ability)
         return FALSE;
-    else if (Random() % 2 != 0)
-        return FALSE;
+    // Dont check this, we want to fail to find type instead
+    //else if (Random() % 2 != 0)
+    //    return FALSE;
 
 #ifdef BUGFIX
-    return TryGetRandomWildMonIndexByType(wildMon, type, size, monIndex);
+    return TryNotToGetRandomWildMonIndexByType(wildMon, type, size, monIndex);
 #else
-    return TryGetRandomWildMonIndexByType(wildMon, type, LAND_WILD_COUNT, monIndex);
+    // Invert The type pulls
+    return TryNotToGetRandomWildMonIndexByType(wildMon, type, LAND_WILD_COUNT, monIndex);
 #endif
 }
 

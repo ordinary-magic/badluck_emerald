@@ -293,7 +293,7 @@ void GenerateGiddyLine(void)
     }
 
     // 10% chance for Giddy to stop telling tales.
-    if (!(Random() % 10))
+    if (TRUE) //!(Random() % 10))
         giddy->taleCounter = GIDDY_MAX_TALES;
     else
         giddy->taleCounter++;

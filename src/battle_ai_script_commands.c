@@ -15,6 +15,7 @@
 #include "constants/battle_move_effects.h"
 #include "constants/items.h"
 #include "constants/moves.h"
+#include "constants/trainers.h"
 
 #define AI_ACTION_DONE          (1 << 0)
 #define AI_ACTION_FLEE          (1 << 1)
@@ -1748,7 +1749,15 @@ static void Cmd_if_can_faint(void)
     AI_CalcDmg(sBattler_AI, gBattlerTarget);
     TypeCalc(gCurrentMove, sBattler_AI, gBattlerTarget);
 
-    gBattleMoveDamage = gBattleMoveDamage * AI_THINKING_STRUCT->simulatedRNG[AI_THINKING_STRUCT->movesetIndex] / 100;
+    if(gTrainers[gTrainerBattleOpponent_A].trainerClass == TRAINER_CLASS_STEVEN) {
+        // Dont Modify the move damage, as its always a max roll
+        // Check if we will crit
+        if(!(gBattleMons[gBattlerTarget].ability == ABILITY_BATTLE_ARMOR ||
+             gBattleMons[gBattlerTarget].ability == ABILITY_SHELL_ARMOR))
+            gBattleMoveDamage *= 2;
+
+    } else
+        gBattleMoveDamage = gBattleMoveDamage * AI_THINKING_STRUCT->simulatedRNG[AI_THINKING_STRUCT->movesetIndex] / 100;
 
     // Moves always do at least 1 damage.
     if (gBattleMoveDamage == 0)
@@ -2009,7 +2018,7 @@ static void Cmd_if_random_safari_flee(void)
 {
     u8 safariFleeRate = gBattleStruct->safariEscapeFactor * 5; // Safari flee rate, from 0-20.
 
-    if ((u8)(Random() % 100) < safariFleeRate)
+    if (0 < safariFleeRate)
         gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);
     else
         gAIScriptPtr += 5;

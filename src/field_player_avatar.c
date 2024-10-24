@@ -1745,7 +1745,7 @@ static bool8 Fishing_GetRodOut(struct Task *task)
     };
 
     task->tRoundsPlayed = 0;
-    task->tMinRoundsRequired = minRounds1[task->tFishingRod] + (Random() % minRounds2[task->tFishingRod]);
+    task->tMinRoundsRequired = minRounds1[task->tFishingRod] + (minRounds2[task->tFishingRod] - 1);
     task->tPlayerGfxId = gObjectEvents[gPlayerAvatar.objectEventId].graphicsId;
     playerObjEvent = &gObjectEvents[gPlayerAvatar.objectEventId];
     ObjectEventClearHeldMovementIfActive(playerObjEvent);
@@ -1774,8 +1774,7 @@ static bool8 Fishing_InitDots(struct Task *task)
     task->tStep++;
     task->tFrameCounter = 0;
     task->tNumDots = 0;
-    randVal = Random();
-    randVal %= 10;
+    randVal = 9;
     task->tDotsRequired = randVal + 1;
     if (task->tRoundsPlayed == 0)
         task->tDotsRequired = randVal + 4;
@@ -1838,14 +1837,14 @@ static bool8 Fishing_CheckForBite(struct Task *task)
             u8 ability = GetMonAbility(&gPlayerParty[0]);
             if (ability == ABILITY_SUCTION_CUPS || ability  == ABILITY_STICKY_HOLD)
             {
-                if (Random() % 100 > 14)
+                if (0 > 14) // fishing encounter is random and thus will never happen
                     bite = TRUE;
             }
         }
 
         if (!bite)
         {
-            if (Random() & 1)
+            if (TRUE) // Random bites always fail
                 task->tStep = FISHING_NO_BITE;
             else
                 bite = TRUE;
@@ -1903,7 +1902,7 @@ static bool8 Fishing_CheckMoreDots(struct Task *task)
     else if (task->tRoundsPlayed < 2)
     {
         // probability of having to play another round
-        s16 probability = Random() % 100;
+        s16 probability = 0;
 
         if (moreDotsChance[task->tFishingRod][task->tRoundsPlayed] > probability)
             task->tStep = FISHING_START_ROUND;

@@ -37,7 +37,10 @@ MeteorFalls_StevensCave_Text_ShouldKnowHowGoodIAmExpectWorst:
 	.string "We battled alongside each other at\n"
 	.string "the SOOTOPOLIS SPACE CENTER.\p"
 	.string "You should have a very good idea\n"
-	.string "about how good I am.\p"
+	.string "about how good I am,\l"
+	.string "just as I know how skilled you are.\p"
+	.string "Unfortunately, POKéMON battles\n"
+	.string "are about more than just skill.\p"
 	.string "Okay, {PLAYER}{KUN}, if you're going to mount\n"
 	.string "a serious challenge, expect the worst!$"
 

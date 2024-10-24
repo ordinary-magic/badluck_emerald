@@ -788,12 +788,12 @@ struct
         .moves = {MOVE_TOXIC, MOVE_AERIAL_ACE, MOVE_PROTECT, MOVE_STEEL_WING}
     },
     {
-        .species = SPECIES_AGGRON,
+        .species = SPECIES_MILOTIC,
         .fixedIV = MAX_PER_STAT_IVS,
         .level = 44,
-        .nature = NATURE_ADAMANT,
-        .evs = {0, 252, 0, 0, 252, 6},
-        .moves = {MOVE_THUNDER, MOVE_PROTECT, MOVE_SOLAR_BEAM, MOVE_DRAGON_CLAW}
+        .nature = NATURE_MODEST,
+        .evs = {252, 0, 0, 0, 252, 6},
+        .moves = {MOVE_WATER_PULSE, MOVE_PROTECT, MOVE_RECOVER, MOVE_TWISTER}
     }
 };
 

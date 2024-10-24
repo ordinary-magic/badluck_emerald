@@ -518,6 +518,7 @@ const struct TrainerMoney gTrainerMoneyTable[] =
     {TRAINER_CLASS_SAILOR, 8},
     {TRAINER_CLASS_COLLECTOR, 15},
     {TRAINER_CLASS_RIVAL, 15},
+    {TRAINER_CLASS_STEVEN, 15},
     {TRAINER_CLASS_PKMN_BREEDER, 10},
     {TRAINER_CLASS_PKMN_RANGER, 12},
     {TRAINER_CLASS_TEAM_MAGMA, 5},
@@ -4626,7 +4627,8 @@ u8 GetWhoStrikesFirst(u8 battler1, u8 battler2, bool8 ignoreChosenMoves)
     if (gBattleMons[battler1].status1 & STATUS1_PARALYSIS)
         speedBattler1 /= 4;
 
-    if (holdEffect == HOLD_EFFECT_QUICK_CLAW && gRandomTurnNumber < (0xFFFF * holdEffectParam) / 100)
+    // No quick claw for player
+    if (holdEffect == HOLD_EFFECT_QUICK_CLAW && 0xFFFF < (0xFFFF * holdEffectParam) / 100)
         speedBattler1 = UINT_MAX;
 
     // check second battlerId's speed
@@ -4660,7 +4662,8 @@ u8 GetWhoStrikesFirst(u8 battler1, u8 battler2, bool8 ignoreChosenMoves)
     if (gBattleMons[battler2].status1 & STATUS1_PARALYSIS)
         speedBattler2 /= 4;
 
-    if (holdEffect == HOLD_EFFECT_QUICK_CLAW && gRandomTurnNumber < (0xFFFF * holdEffectParam) / 100)
+    // Always Quick Claw for Enemy
+    if (holdEffect == HOLD_EFFECT_QUICK_CLAW && 0 < (0xFFFF * holdEffectParam) / 100)
         speedBattler2 = UINT_MAX;
 
     if (ignoreChosenMoves)

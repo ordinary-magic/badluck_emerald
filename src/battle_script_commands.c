@@ -40,6 +40,7 @@
 #include "menu_specialized.h"
 #include "data.h"
 #include "constants/abilities.h"
+#include "constants/battle_ai.h"
 #include "constants/battle_anim.h"
 #include "constants/battle_move_effects.h"
 #include "constants/battle_string_ids.h"
@@ -1173,7 +1174,9 @@ static void Cmd_accuracycheck(void)
             calc = (calc * (100 - param)) / 100;
 
         // final calculation
-        if ((Random() % 100 + 1) > calc)
+        // player always hit if able, ai never hit if able (Wally also always hits)
+        if (((GetBattlerSide(gBattlerTarget) == B_SIDE_PLAYER)? 0 : 99) > calc &&
+             !(gBattleTypeFlags & BATTLE_TYPE_WALLY_TUTORIAL))
         {
             gMoveResultFlags |= MOVE_RESULT_MISSED;
             if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE
@@ -1279,7 +1282,7 @@ static void Cmd_critcalc(void)
     if ((gBattleMons[gBattlerTarget].ability != ABILITY_BATTLE_ARMOR && gBattleMons[gBattlerTarget].ability != ABILITY_SHELL_ARMOR)
      && !(gStatuses3[gBattlerAttacker] & STATUS3_CANT_SCORE_A_CRIT)
      && !(gBattleTypeFlags & (BATTLE_TYPE_WALLY_TUTORIAL | BATTLE_TYPE_FIRST_BATTLE))
-     && !(Random() % sCriticalHitChance[critChance]))
+     && (GetBattlerSide(gBattlerTarget) == B_SIDE_PLAYER)) // Player is always crit, AI is never crit.
         gCritMultiplier = 2;
     else
         gCritMultiplier = 1;
@@ -1638,8 +1641,12 @@ u8 AI_TypeCalc(u16 move, u16 targetSpecies, u8 targetAbility)
 // Multiplies the damage by a random factor between 85% to 100% inclusive
 static inline void ApplyRandomDmgMultiplier(void)
 {
-    u16 rand = Random();
-    u16 randPercent = 100 - (rand % 16);
+    // AI gets max roll, player gets min
+    u16 randPercent = (GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER)? 85 : 100;
+    
+    // Wally will always max roll
+    if(gBattleTypeFlags & BATTLE_TYPE_WALLY_TUTORIAL)
+        randPercent = 100;
 
     if (gBattleMoveDamage != 0)
     {
@@ -1674,7 +1681,8 @@ static void Cmd_adjustnormaldamage(void)
 
     gPotentialItemEffectBattler = gBattlerTarget;
 
-    if (holdEffect == HOLD_EFFECT_FOCUS_BAND && (Random() % 100) < param)
+    
+    if (holdEffect == HOLD_EFFECT_FOCUS_BAND && (GetBattlerSide(gActiveBattler) != B_SIDE_PLAYER))
     {
         RecordItemEffectBattle(gBattlerTarget, holdEffect);
         gSpecialStatuses[gBattlerTarget].focusBanded = 1;
@@ -1717,7 +1725,7 @@ static void Cmd_adjustnormaldamage2(void)
 
     gPotentialItemEffectBattler = gBattlerTarget;
 
-    if (holdEffect == HOLD_EFFECT_FOCUS_BAND && (Random() % 100) < param)
+    if (holdEffect == HOLD_EFFECT_FOCUS_BAND && (GetBattlerSide(gActiveBattler) != B_SIDE_PLAYER))
     {
         RecordItemEffectBattle(gBattlerTarget, holdEffect);
         gSpecialStatuses[gBattlerTarget].focusBanded = 1;
@@ -2469,9 +2477,10 @@ void SetMoveEffect(bool8 primary, u8 certain)
         {
             BattleScriptPush(gBattlescriptCurrInstr + 1);
 
-            if (sStatusFlagsForMoveEffects[gBattleCommunication[MOVE_EFFECT_BYTE]] == STATUS1_SLEEP)
-                gBattleMons[gEffectBattler].status1 |= STATUS1_SLEEP_TURN((Random() & 3) + 2); // 2-5 turns
-            else
+            if (sStatusFlagsForMoveEffects[gBattleCommunication[MOVE_EFFECT_BYTE]] == STATUS1_SLEEP) {
+                u8 sleepturn = (GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER)? 2 : 5; // npc inflicts max sleep, pc min sleep
+                gBattleMons[gEffectBattler].status1 |= STATUS1_SLEEP_TURN(sleepturn); // 2-5 turns
+            } else
                 gBattleMons[gEffectBattler].status1 |= sStatusFlagsForMoveEffects[gBattleCommunication[MOVE_EFFECT_BYTE]];
 
             gBattlescriptCurrInstr = sMoveEffectBS_Ptrs[gBattleCommunication[MOVE_EFFECT_BYTE]];
@@ -2530,7 +2539,8 @@ void SetMoveEffect(bool8 primary, u8 certain)
                 }
                 else
                 {
-                    gBattleMons[gEffectBattler].status2 |= STATUS2_CONFUSION_TURN(((Random()) % 4) + 2); // 2-5 turns
+                    u8 confturn = (GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER)? 2 : 5; // player inflicts min confused, ai gets max
+                    gBattleMons[gEffectBattler].status2 |= STATUS2_CONFUSION_TURN(confturn); // 2-5 turns
 
                     BattleScriptPush(gBattlescriptCurrInstr + 1);
                     gBattlescriptCurrInstr = sMoveEffectBS_Ptrs[gBattleCommunication[MOVE_EFFECT_BYTE]];
@@ -2562,7 +2572,10 @@ void SetMoveEffect(bool8 primary, u8 certain)
                 {
                     gBattleMons[gEffectBattler].status2 |= STATUS2_MULTIPLETURNS;
                     gLockedMoves[gEffectBattler] = gCurrentMove;
-                    gBattleMons[gEffectBattler].status2 |= STATUS2_UPROAR_TURN((Random() & 3) + 2); // 2-5 turns
+                    
+                    gBattleMons[gEffectBattler].status2 |= STATUS2_UPROAR_TURN(
+                        (GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER)? 5 : 2 // min turns for ai, max for player
+                    ); // 2-5 turns
 
                     BattleScriptPush(gBattlescriptCurrInstr + 1);
                     gBattlescriptCurrInstr = sMoveEffectBS_Ptrs[gBattleCommunication[MOVE_EFFECT_BYTE]];
@@ -2590,7 +2603,8 @@ void SetMoveEffect(bool8 primary, u8 certain)
                 }
                 else
                 {
-                    gBattleCommunication[MOVE_EFFECT_BYTE] = Random() % 3 + 3;
+                    // Tri-Attack will always inflict paralysis
+                    gBattleCommunication[MOVE_EFFECT_BYTE] = 5;
                     SetMoveEffect(FALSE, 0);
                 }
                 break;
@@ -2607,7 +2621,8 @@ void SetMoveEffect(bool8 primary, u8 certain)
                 }
                 else
                 {
-                    gBattleMons[gEffectBattler].status2 |= STATUS2_WRAPPED_TURN((Random() & 3) + 3); // 3-6 turns
+                    u8 effectturn = (GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER)? 3 : 6; // player inflicts min turns, ai gets max
+                    gBattleMons[gEffectBattler].status2 |= STATUS2_WRAPPED_TURN(effectturn); // 3-6 turns
 
                     *(gBattleStruct->wrappedMove + gEffectBattler * 2 + 0) = gCurrentMove;
                     *(gBattleStruct->wrappedMove + gEffectBattler * 2 + 1) = gCurrentMove >> 8;
@@ -2849,7 +2864,8 @@ void SetMoveEffect(bool8 primary, u8 certain)
                 {
                     gBattleMons[gEffectBattler].status2 |= STATUS2_MULTIPLETURNS;
                     gLockedMoves[gEffectBattler] = gCurrentMove;
-                    gBattleMons[gEffectBattler].status2 |= STATUS2_LOCK_CONFUSE_TURN((Random() & 1) + 2); // thrash for 2-3 turns
+                    // Minimum turns are always better: confusion is bad for player, ai gets flexibility
+                    gBattleMons[gEffectBattler].status2 |= STATUS2_LOCK_CONFUSE_TURN(3);
                 }
                 break;
             case MOVE_EFFECT_KNOCK_OFF:
@@ -2912,7 +2928,7 @@ static void Cmd_seteffectwithchance(void)
         gBattleCommunication[MOVE_EFFECT_BYTE] &= ~MOVE_EFFECT_CERTAIN;
         SetMoveEffect(FALSE, MOVE_EFFECT_CERTAIN);
     }
-    else if (Random() % 100 < percentChance
+    else if (((GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER)? 99 : 0) < percentChance
              && gBattleCommunication[MOVE_EFFECT_BYTE]
              && !(gMoveResultFlags & MOVE_RESULT_NO_EFFECT))
     {
@@ -3294,6 +3310,10 @@ static void Cmd_getexp(void)
             }
 
             calculatedExp = gSpeciesInfo[gBattleMons[gBattlerFainted].species].expYield * gBattleMons[gBattlerFainted].level / 7;
+
+            // QOL Feature: wild pokemon give way more xp to reduce grinding
+            if (!(gBattleTypeFlags & BATTLE_TYPE_TRAINER))
+                calculatedExp *= 4;
 
             if (viaExpShare) // at least one mon is getting exp via exp share
             {
@@ -5864,7 +5884,7 @@ static void Cmd_adjustsetdamage(void)
 
     gPotentialItemEffectBattler = gBattlerTarget;
 
-    if (holdEffect == HOLD_EFFECT_FOCUS_BAND && (Random() % 100) < param)
+    if (holdEffect == HOLD_EFFECT_FOCUS_BAND && (GetBattlerSide(gActiveBattler) != B_SIDE_PLAYER))
     {
         RecordItemEffectBattle(gBattlerTarget, holdEffect);
         gSpecialStatuses[gBattlerTarget].focusBanded = 1;
@@ -6500,7 +6520,8 @@ static void Cmd_setprotectlike(void)
     if (gCurrentTurnActionNumber == (gBattlersCount - 1))
         notLastTurn = FALSE;
 
-    if (sProtectSuccessRates[gDisableStructs[gBattlerAttacker].protectUses] >= Random() && notLastTurn)
+    if ((sProtectSuccessRates[gDisableStructs[gBattlerAttacker].protectUses] >= 
+        (GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER)? USHRT_MAX : 0) && notLastTurn)
     {
         if (gBattleMoves[gCurrentMove].effect == EFFECT_PROTECT)
         {
@@ -7133,11 +7154,7 @@ static void Cmd_setmultihitcounter(void)
     }
     else
     {
-        gMultiHitCounter = Random() & 3;
-        if (gMultiHitCounter > 1)
-            gMultiHitCounter = (Random() & 3) + 2;
-        else
-            gMultiHitCounter += 2;
+        gMultiHitCounter = (GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER)? 2 : 5;
     }
 
     gBattlescriptCurrInstr += 2;
@@ -7158,7 +7175,7 @@ static bool8 TryDoForceSwitchOut(void)
     }
     else
     {
-        u16 random = Random() & 0xFF;
+        u16 random = (GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER)? 0 : 0xFF;
         if ((u32)((random * (gBattleMons[gBattlerAttacker].level + gBattleMons[gBattlerTarget].level) >> 8) + 1) <= (gBattleMons[gBattlerTarget].level / 4))
         {
             gBattlescriptCurrInstr = T1_READ_PTR(gBattlescriptCurrInstr + 1);
@@ -7447,7 +7464,7 @@ static void Cmd_tryKO(void)
 
     gPotentialItemEffectBattler = gBattlerTarget;
 
-    if (holdEffect == HOLD_EFFECT_FOCUS_BAND && (Random() % 100) < param)
+    if (holdEffect == HOLD_EFFECT_FOCUS_BAND && (GetBattlerSide(gActiveBattler) != B_SIDE_PLAYER) < param)
     {
         RecordItemEffectBattle(gBattlerTarget, HOLD_EFFECT_FOCUS_BAND);
         gSpecialStatuses[gBattlerTarget].focusBanded = 1;
@@ -7463,10 +7480,11 @@ static void Cmd_tryKO(void)
     else
     {
         u16 chance;
+        u16 rng_percent = (GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER)? 99 : 0; // always hit player (low value), never hit ai (high value)
         if (!(gStatuses3[gBattlerTarget] & STATUS3_ALWAYS_HITS))
         {
             chance = gBattleMoves[gCurrentMove].accuracy + (gBattleMons[gBattlerAttacker].level - gBattleMons[gBattlerTarget].level);
-            if (Random() % 100 + 1 < chance && gBattleMons[gBattlerAttacker].level >= gBattleMons[gBattlerTarget].level)
+            if (rng_percent + 1 < chance && gBattleMons[gBattlerAttacker].level >= gBattleMons[gBattlerTarget].level)
                 chance = TRUE;
             else
                 chance = FALSE;
@@ -7479,7 +7497,7 @@ static void Cmd_tryKO(void)
         else
         {
             chance = gBattleMoves[gCurrentMove].accuracy + (gBattleMons[gBattlerAttacker].level - gBattleMons[gBattlerTarget].level);
-            if (Random() % 100 + 1 < chance && gBattleMons[gBattlerAttacker].level >= gBattleMons[gBattlerTarget].level)
+            if (rng_percent + 1 < chance && gBattleMons[gBattlerAttacker].level >= gBattleMons[gBattlerTarget].level)
                 chance = TRUE;
             else
                 chance = FALSE;
@@ -7827,43 +7845,108 @@ static void Cmd_mimicattackcopy(void)
 
 static void Cmd_metronome(void)
 {
-    while (TRUE)
-    {
-        s32 i;
+    // Always call Splash if the player uses metronome
+    if (GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER)
+        gCurrentMove = MOVE_SPLASH;
 
-    #if MOVES_COUNT < 512
-        // Original GF method of move selection is to pick a random
-        // number between 1-511. 355-511 are not valid moves, so if it
-        // picks in this range it retries. If MOVES_COUNT exceeds 511 we
-        // instead use a simpler solution.
-        gCurrentMove = (Random() & 0x1FF) + 1;
-        if (gCurrentMove >= MOVES_COUNT)
-            continue;
-    #else
-        // Just pick a valid move value (between 1 and MOVES_COUNT-1)
-        gCurrentMove = (Random() % (MOVES_COUNT - 1)) + 1;
-    #endif
+    else {
+    /*  Algo:
+        1) If target level is <= attacker and its the first metronome, use sheer cold
+        2) Determine what type(s) are most effective against opponent
+        3) Call a random good move of that type(s)
 
-        for (i = 0; i < MAX_MON_MOVES; i++); // ?
+        --Status Moves--
+        Because of how powerful always triggering secondary effects is,
+        status moves are obsoleted enough that I'm not worrying about it.
 
-        i = -1;
-        while (TRUE)
-        {
-            i++;
-            if (sMovesForbiddenToCopy[i] == gCurrentMove)
-                break;
-            if (sMovesForbiddenToCopy[i] == METRONOME_FORBIDDEN_END)
-                break;
-        }
+        --Two Interesting Attacks Per Type--
+        Normal - Omitted because it is never super effective
+        Fire - Fire Blast (Burn), Overheat (dps/meme)
+        Fighting - Dynamicpunch (DPS/Confuse), High Jump Kick (DPS)
+        Water - Muddy Water (-Accuracy), Water Pulse (Confuse)
+        Flying - Aeroblast (DPS), Bounce (Para)
+        Grass - Giga Drain (Healing), Petal Dance (DPS, Multi Turn)
+        Poison - Sludge Bomb (Poison), Poison Fang (Badly Poison)
+        Electric - Zap Cannon (para), Thunder (para)
+        Ground - Magnitude (dps/meme), Bone Rush (DPS/5hit)
+        Psychic - Luster Purge (drop), Pshycho Boost (dps/meme)
+        Rock - Ancientpower (Boost), Rock Blast (DPS/5hit)
+        Ice - Blizzard (Freeze), Icy Wind (Drop)
+        Bug - Silver Wind (Boost),  Signal Beam (Confuse)
+        Dragon - Outrage (MultiTurn),  Dragonbreath (Paralysis)
+        Ghost - Shadow Ball (Drop), Shadow Punch (ghost moves are bad)
+        Dark - Crunch (Drop), Bite (Flinch)
+        Steel - Meteor Mash (Boost), Iron Tail (Drop)
+    */
+        // Metronome's Callable Moves
+        // Note: NUMBER_OF_MON_TYPES includes "Mystery" type and normal type, which i dont use here
+        u16 metronome_moves[NUMBER_OF_MON_TYPES * 2 - 4] = {
+            MOVE_FIRE_BLAST, MOVE_OVERHEAT,
+            MOVE_DYNAMIC_PUNCH, MOVE_HI_JUMP_KICK,
+            MOVE_MUDDY_WATER, MOVE_WATER_PULSE,
+            MOVE_AEROBLAST, MOVE_DRILL_PECK,
+            MOVE_GIGA_DRAIN, MOVE_PETAL_DANCE,
+            MOVE_SLUDGE_BOMB, MOVE_POISON_FANG,
+            MOVE_ZAP_CANNON, MOVE_THUNDER,
+            MOVE_MAGNITUDE, MOVE_BONE_RUSH,
+            MOVE_LUSTER_PURGE, MOVE_PSYCHO_BOOST,
+            MOVE_ANCIENT_POWER, MOVE_ROCK_BLAST,
+            MOVE_BLIZZARD, MOVE_ICY_WIND,
+            MOVE_SILVER_WIND, MOVE_SIGNAL_BEAM,
+            MOVE_OUTRAGE, MOVE_DRAGON_BREATH,
+            MOVE_SHADOW_BALL, MOVE_SHADOW_PUNCH,
+            MOVE_CRUNCH, MOVE_BITE,
+            MOVE_METEOR_MASH, MOVE_IRON_TAIL
+        };
 
-        if (sMovesForbiddenToCopy[i] == METRONOME_FORBIDDEN_END)
-        {
-            gHitMarker &= ~HITMARKER_ATTACKSTRING_PRINTED;
-            gBattlescriptCurrInstr = gBattleScriptsForMoveEffects[gBattleMoves[gCurrentMove].effect];
-            gBattlerTarget = GetMoveTarget(gCurrentMove, NO_TARGET_OVERRIDE);
-            return;
+        // Must declare variables at start of block
+        u32 typecheck[NUMBER_OF_MON_TYPES - 2] = {0};
+        u8 best_type_effectiveness = 0;
+        u8 number_of_best_types = 0;
+        u8 type_index = 0;
+        u8 i;
+
+        // Call sheer cold if levels are appropriate and its the first metronome
+        if (gBattleMons[gBattlerAttacker].level >= gBattleMons[gBattlerTarget].level &&
+            gBattleMoves[MOVE_METRONOME].pp == gBattleMons[gBattlerAttacker].pp[gCurrMovePos]) {
+            gCurrentMove = MOVE_SHEER_COLD;
+
+        } else {
+            // Check Each Type's Effectiveness to find the strongest
+            for(i=0; i < NUMBER_OF_MON_TYPES - 2; ++i) {
+                // The AI checks move effectiveness by setting a base power, and then modifying
+                //   it based off of type interactions. We can do the same thing here.
+                gBattleMoveDamage = AI_EFFECTIVENESS_x1;
+
+                // Metronome move list contains 2 of each type so we can skip every other one
+                if (TypeCalc(metronome_moves[i*2], gBattlerAttacker, gBattlerTarget) & MOVE_RESULT_DOESNT_AFFECT_FOE)
+                    typecheck[i] = AI_EFFECTIVENESS_x0; // Type Immunities are returned via flag.
+                else
+                    // gBattleMoveDamage is updated as a side effect of running TypeCalc
+                    typecheck[i] = gBattleMoveDamage;
+
+                // Check if this is a good type to use by comparing it to the previous best result
+                if (typecheck[i] > best_type_effectiveness) {
+                    number_of_best_types = 1;
+                    best_type_effectiveness = typecheck[i];
+                } else if (typecheck[i] == best_type_effectiveness)
+                    number_of_best_types++;
+            }
+
+            // Iterate through the list of types to search for the nth one of the best effectivene types.
+            for (i = Random() % number_of_best_types; (typecheck[type_index] != best_type_effectiveness) || (i > 0); ++type_index)
+                if(typecheck[type_index] == best_type_effectiveness)
+                    --i; // We've found a best type, but not the selected one yet.
+
+            // Randomly select one of the two moves of that type
+            gCurrentMove = metronome_moves[type_index * 2 + Random() % 2];
         }
     }
+
+    // Reset the attack state to perform the new move
+    gHitMarker &= ~HITMARKER_ATTACKSTRING_PRINTED;
+    gBattlescriptCurrInstr = gBattleScriptsForMoveEffects[gBattleMoves[gCurrentMove].effect];
+    gBattlerTarget = GetMoveTarget(gCurrentMove, NO_TARGET_OVERRIDE);
 }
 
 static void Cmd_dmgtolevel(void)
@@ -7874,9 +7957,7 @@ static void Cmd_dmgtolevel(void)
 
 static void Cmd_psywavedamageeffect(void)
 {
-    s32 randDamage;
-
-    while ((randDamage = Random() % 16) > 10);
+    s32 randDamage = (GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER)? 0 : 10;
 
     randDamage *= 10;
     gBattleMoveDamage = gBattleMons[gBattlerAttacker].level * (randDamage + 50) / 100;
@@ -7947,7 +8028,7 @@ static void Cmd_disablelastusedattack(void)
         PREPARE_MOVE_BUFFER(gBattleTextBuff1, gBattleMons[gBattlerTarget].moves[i])
 
         gDisableStructs[gBattlerTarget].disabledMove = gBattleMons[gBattlerTarget].moves[i];
-        gDisableStructs[gBattlerTarget].disableTimer = (Random() & 3) + 2;
+        gDisableStructs[gBattlerTarget].disableTimer = (GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER)? 2 : 5;
         gDisableStructs[gBattlerTarget].disableTimerStartValue = gDisableStructs[gBattlerTarget].disableTimer; // used to save the random amount of turns?
         gBattlescriptCurrInstr += 5;
     }
@@ -7979,7 +8060,7 @@ static void Cmd_trysetencore(void)
     {
         gDisableStructs[gBattlerTarget].encoredMove = gBattleMons[gBattlerTarget].moves[i];
         gDisableStructs[gBattlerTarget].encoredMovePos = i;
-        gDisableStructs[gBattlerTarget].encoreTimer = (Random() & 3) + 3;
+        gDisableStructs[gBattlerTarget].encoreTimer = (GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER)? 2 : 5;
         gDisableStructs[gBattlerTarget].encoreTimerStartValue = gDisableStructs[gBattlerTarget].encoreTimer;
         gBattlescriptCurrInstr += 5;
     }
@@ -8273,7 +8354,7 @@ static void Cmd_tryspiteppreduce(void)
 
         if (i != MAX_MON_MOVES && gBattleMons[gBattlerTarget].pp[i] > 1)
         {
-            s32 ppToDeduct = (Random() & 3) + 2;
+            s32 ppToDeduct = (GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER)? 1 : 4;
             if (gBattleMons[gBattlerTarget].pp[i] < ppToDeduct)
                 ppToDeduct = gBattleMons[gBattlerTarget].pp[i];
 
@@ -8555,13 +8636,7 @@ static void Cmd_friendshiptodamagecalculation(void)
 
 static void Cmd_presentdamagecalculation(void)
 {
-    s32 rand = Random() & 0xFF;
-
-    if (rand < 102)
-        gDynamicBasePower = 40;
-    else if (rand < 178)
-        gDynamicBasePower = 80;
-    else if (rand < 204)
+    if (GetBattlerSide(gBattlerAttacker) != B_SIDE_PLAYER)
         gDynamicBasePower = 120;
     else
     {
@@ -8570,7 +8645,7 @@ static void Cmd_presentdamagecalculation(void)
             gBattleMoveDamage = 1;
         gBattleMoveDamage *= -1;
     }
-    if (rand < 204)
+    if (GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER)
         gBattlescriptCurrInstr = BattleScript_HitFromCritCalc;
     else if (gBattleMons[gBattlerTarget].maxHP == gBattleMons[gBattlerTarget].hp)
         gBattlescriptCurrInstr = BattleScript_AlreadyAtFullHp;
@@ -8601,7 +8676,7 @@ static void Cmd_setsafeguard(void)
 
 static void Cmd_magnitudedamagecalculation(void)
 {
-    s32 magnitude = Random() % 100;
+    s32 magnitude = (GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER)? 0 : 99;
 
     if (magnitude < 5)
     {
@@ -9604,7 +9679,7 @@ static void Cmd_pickup(void)
                 && species != SPECIES_NONE
                 && species != SPECIES_EGG
                 && heldItem == ITEM_NONE
-                && (Random() % 10) == 0)
+                && 1 == 0)
             {
                 heldItem = GetBattlePyramidPickupItemId();
                 SetMonData(&gPlayerParty[i], MON_DATA_HELD_ITEM, &heldItem);
@@ -9627,10 +9702,10 @@ static void Cmd_pickup(void)
                 && species != SPECIES_NONE
                 && species != SPECIES_EGG
                 && heldItem == ITEM_NONE
-                && (Random() % 10) == 0)
+                && 1 == 0) // Pickup is RNG, and thus will never work
             {
                 s32 j;
-                s32 rand = Random() % 100;
+                s32 rand = 1;
                 u8 lvlDivBy10 = (GetMonData(&gPlayerParty[i], MON_DATA_LEVEL) - 1) / 10;
                 if (lvlDivBy10 > 9)
                     lvlDivBy10 = 9;
@@ -9954,6 +10029,8 @@ static void Cmd_handleballthrow(void)
 
             if (gLastUsedItem == ITEM_MASTER_BALL)
                 shakes = BALL_3_SHAKES_SUCCESS; // why calculate the shakes before that check?
+            else if (shakes == BALL_3_SHAKES_SUCCESS)
+                shakes = BALL_3_SHAKES_FAIL; // Can't Catch if its rng
 
             BtlController_EmitBallThrowAnim(BUFFER_A, shakes);
             MarkBattlerForControllerExec(gActiveBattler);
