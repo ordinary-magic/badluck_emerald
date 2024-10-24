@@ -15,4 +15,4 @@ This repo will build the follwing rom:
 
 To set up the repository, see [INSTALL.md](INSTALL.md).
 
-For contacts and other pret projects, see [pret.github.io](https://pret.github.io/).
+If you just want an ips patch file, you can get it on the releases page.
