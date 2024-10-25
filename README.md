@@ -2,7 +2,7 @@
 
 This is an edit of the Pokémon Emerald decompilation, mostly for fun.
 
-This rom removes most instances of randomness from the game, in favor of deterministically selecting results that disfavor the player. For instance: Tackle, a 95 accuracy move, will always miss when used by the player, but will always result in a maximum damage crit when used by the enemy. This mod is *very* thorough, and if you find something I’ve missed something, I’d encourage you to submit an issue about it so I can fix it.
+This rom removes most instances of randomness from the game, in favor of deterministically selecting results that disfavor the player. For instance: Tackle, a 95 accuracy move, will always miss when used by the player, but will always result in a maximum damage crit when used by the enemy. This mod is *very* thorough, and if you find something I’ve missed, I’d encourage you to submit an issue about it so I can fix it.
 
 With a couple of small, later game exceptions, the content of the emerald game remains unchanged. The goal of this being that any gameplay experienced is something that could (in an extremely unlikely circumstance) happen in an unmodified copy of emerald.
 
@@ -15,4 +15,4 @@ This repo will build the follwing rom:
 
 To set up the repository, see [INSTALL.md](INSTALL.md).
 
-If you just want an ips patch file, you can get it on the releases page.
+If you just want an ips patch file, you can grab the most recent one from the [Releases Page](https://github.com/ordinary-magic/badluck_emerald/releases).
